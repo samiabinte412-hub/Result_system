@@ -150,6 +150,7 @@ a{
         📷 Scan Barcode
     </button><br>
 
+    <div id="reader" style="width:300px;"></div>
     <input type="hidden" name="barcode" placeholder="Barcode">
 
     
@@ -309,10 +310,10 @@ document.getElementById("scan-btn").onclick = function () {
 
             document.querySelector("input[name='barcode']").value = decodedText;
 
-            scanner.stop().then(() => {
-                document.getElementById("reader").style.display = "none";
-                document.querySelector("button[value='lookup']").click();
-            });
+            scanner.stop();
+            document.getElementById("reader").style.display = "none";
+
+            document.querySelector("button[value='lookup']").click();
 
         },
 
