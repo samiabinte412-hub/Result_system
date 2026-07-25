@@ -10,4 +10,6 @@ urlpatterns = [
     path("edit/<int:id>/", views.edit_expense, name="edit_expense"),
 
     path('logout/', views.logout_view, name='logout'),
+
+    path("home/lookup/", views.product_lookup, name="lookup"),
 ]

@@ -146,13 +146,25 @@ a{
 <!-- Add -->
   <form method="POST" >
     {% csrf_token %}
+    <button type="button" id="scan-btn">
+        📷 Scan Barcode
+    </button><br>
+
+    <div id="reader" style="width:300px;"></div>
+    <input type="text" name="barcode" placeholder="Barcode">
+
+    <button type="submit" name="action" value="lookup">
+        🔍 Find Product
+    </button><br><br>
+    
 
     <label>Name:</label>
-    <input name="name" placeholder="Enter the name"><br><br>
+    <input name="name" value="{{ prefill_name }}" placeholder="Enter the name"><br><br>
 
     <label>Amount:</label>
     <input name="amount" placeholder="Enter the amount">
     <button name="action" value="add" class="add">Add</button>
+
   </form>
 </div> 
 
@@ -191,6 +203,15 @@ a{
 
 
 <hr>
+{% if product %}
+
+<p><b>Name:</b> {{ product.name }}</p>
+
+<p><b>Brand:</b> {{ product.brand }}</p>
+
+<p><b>Quantity:</b> {{ product.quantity }}</p>
+
+{% endif %}
 
 {% if action == "show" or request.GET.search %}
     {% regroup expenses by created_at.date as grouped_expenses %}
@@ -271,3 +292,25 @@ a{
 {% endif %}
 
 </div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+document.getElementById("scan-btn").onclick = function () {
+
+    const scanner = new Html5Qrcode("reader");
+
+    scanner.start(
+        { facingMode: "environment" },
+
+        { fps: 10, qrbox: 250
+        },
+
+        function(decodedText){
+
+            document.querySelector("input[name='barcode']").value = decodedText;
+
+            scanner.stop();
+        }
+    );
+}
+</script>

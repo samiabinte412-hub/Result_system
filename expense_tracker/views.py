@@ -1,6 +1,6 @@
 from calendar import month
 from urllib import request
-
+import requests
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Expense
 from django.utils import timezone
@@ -141,6 +141,8 @@ def logout_view(request):
 def home(request):
 
     success = None
+    product = None
+    prefill_name = ""
     
     expenses = Expense.objects.filter(user=request.user).order_by('-created_at')
 
@@ -200,6 +202,26 @@ def home(request):
         elif action == 'edit':
             pass
 
+        elif action == 'lookup':
+            barcode = request.POST.get("barcode")
+
+            url = f"https://world.openfoodfacts.org/api/v3/product/{barcode}"
+
+            headers = {
+                "User-Agent": "ExpenseTracker/1.0 (learning)"
+            }
+
+            response = requests.get(url, headers=headers)
+
+            if response.status_code == 200:
+                data = response.json()
+
+                product = {
+                    "name": data["product"].get("product_name", "Unknown"),
+                    "brand": data["product"].get("brands", "Unknown"),
+                }
+                prefill_name = product["name"]
+
     return render(request, 'expense_tracker/home.html', {
         'expenses': expenses,
         'monthly_total': get_monthly_total(request),
@@ -207,5 +229,12 @@ def home(request):
         'action': action,
         'selected_month_total': selected_month_total,
         'selected_item_total': selected_item_total,
-        'success': success
+        'success': success,
+        'product': product,
+        'prefill_name': prefill_name
     })
+
+
+@login_required
+def product_lookup(request):
+    return render(request, "product_lookup.html")
