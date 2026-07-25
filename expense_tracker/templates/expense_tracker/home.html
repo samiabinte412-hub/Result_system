@@ -150,12 +150,12 @@ a{
         📷 Scan Barcode
     </button><br>
 
-    <div id="reader" style="width:300px;"></div>
-    <input type="text" name="barcode" placeholder="Barcode">
+    <input type="hidden" name="barcode" placeholder="Barcode">
 
-    <button type="submit" name="action" value="lookup">
-        🔍 Find Product
-    </button><br><br>
+    
+    {% if product_message %}
+    <p>{{ product_message }}</p>
+    {% endif %}<br><br>
     
 
     <label>Name:</label>
@@ -309,7 +309,15 @@ document.getElementById("scan-btn").onclick = function () {
 
             document.querySelector("input[name='barcode']").value = decodedText;
 
-            scanner.stop();
+            scanner.stop().then(() => {
+                document.getElementById("reader").style.display = "none";
+                document.querySelector("button[value='lookup']").click();
+            });
+
+        },
+
+        function(errorMessage) {
+            // Ignore scan failures while searching
         }
     );
 }

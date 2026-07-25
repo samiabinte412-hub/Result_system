@@ -143,6 +143,7 @@ def home(request):
     success = None
     product = None
     prefill_name = ""
+    product_message = ""
     
     expenses = Expense.objects.filter(user=request.user).order_by('-created_at')
 
@@ -202,7 +203,7 @@ def home(request):
         elif action == 'edit':
             pass
 
-        elif action == 'lookup':
+        elif action == "lookup":
             barcode = request.POST.get("barcode")
 
             url = f"https://world.openfoodfacts.org/api/v3/product/{barcode}"
@@ -211,16 +212,32 @@ def home(request):
                 "User-Agent": "ExpenseTracker/1.0 (learning)"
             }
 
+            product = None
+
             response = requests.get(url, headers=headers)
 
             if response.status_code == 200:
+
                 data = response.json()
 
-                product = {
-                    "name": data["product"].get("product_name", "Unknown"),
-                    "brand": data["product"].get("brands", "Unknown"),
-                }
-                prefill_name = product["name"]
+                if data.get("product"):
+
+                    product = {
+                        "name": data["product"].get("product_name", "Unknown"),
+                        "brand": data["product"].get("brands", "Unknown"),
+                    }
+
+                    prefill_name = product["name"]
+                    product_message = "✅ Product found"
+
+                else:
+                    product_message = "❌ Product not found"
+
+            elif response.status_code == 404:
+                product_message = "❌ Product not found"
+
+            else:
+                product_message = f"⚠️ API returned {response.status_code}"
 
     return render(request, 'expense_tracker/home.html', {
         'expenses': expenses,
@@ -231,7 +248,8 @@ def home(request):
         'selected_item_total': selected_item_total,
         'success': success,
         'product': product,
-        'prefill_name': prefill_name
+        'prefill_name': prefill_name,
+        'product_message': product_message
     })
 
 
