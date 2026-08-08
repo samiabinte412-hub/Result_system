@@ -58,7 +58,70 @@ a{
     color: white;
     border-color:rgb(245, 110, 130);
 }
+.modal {
+    display: none;
 
+    position: fixed;
+    inset: 0;
+
+    background: rgba(0, 0, 0, 0.45);
+
+    align-items: center;
+    justify-content: center;
+
+    z-index: 9999;
+}
+
+.modal-box {
+    background: white;
+
+    width: 320px;
+    padding: 25px;
+
+    border-radius: 15px;
+
+    text-align: center;
+
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+}
+
+.modal-icon {
+    font-size: 40px;
+}
+
+.modal-box h2 {
+    margin-bottom: 10px;
+}
+
+.modal-box p {
+    color: #666;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+
+    margin-top: 25px;
+}
+
+.modal-buttons button,
+.modal-buttons a {
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.modal-buttons button {
+    background: #eee;
+}
+
+.modal-buttons a {
+    background: #d9534f;
+    color: white;
+}
 
 /* ---------- Mobile Only ---------- */
 @media (max-width:768px){
@@ -194,8 +257,10 @@ a{
     {% csrf_token %}
     <button name="action" value="show" class="show" >Show Expenses</button>
     <button name="action" value="total" class="total" ">Show Total</button>
-    <button name="action" value="clear" class="clear" >Clear All</button>
-    <button name="action" value="delete" class="delete" >Delete</button>
+    <button name="action" value="clear" class="clear"
+        onclick="return confirm('⚠️ Are you sure you want to delete ALL expenses? This cannot be undone.');"
+         >Clear All</button>
+    <button name="action" value="delete" class="delete">Delete</button>
     <button name="action" value="edit" class="edit" >Edit</button>
 </form>
 </div>
@@ -233,6 +298,10 @@ a{
     {% endfor %}
 {% endif %}
 
+{% if not expenses %}
+        <p>No expenses to show.</p>
+{% endif %}
+
 {% if action == "total" %}
     <h3>Total: {{ total }}</h3>
     <p>Monthly Total: {{ monthly_total }}</p>
@@ -265,7 +334,12 @@ a{
                         {{ expense.name }}
                         - {{ expense.amount }}
                          ({{ expense.created_at|date:"h:i A" }})
-                    <a href="{% url 'delete_expense' expense.id %}">Delete</a>
+                        <a href="#"
+                            class="delete-link"
+                            data-url="{% url 'delete_expense' expense.id %}"
+                            data-name="{{ expense.name }}">
+                                Delete
+                        </a>
                     </li>
             </ul>
             
@@ -324,4 +398,56 @@ document.getElementById("scan-btn").onclick = function () {
         }
     );
 }
+</script>
+
+<div id="delete-modal" class="modal">
+
+    <div class="modal-box">
+
+        <div class="modal-icon">⚠️</div>
+
+        <h2>Delete expense?</h2>
+
+        <p>
+            Are you sure you want to delete
+            <strong id="delete-name"></strong>?
+        </p>
+
+        <div class="modal-buttons">
+            <button type="button" id="cancel-delete">
+                Cancel
+            </button>
+
+            <a id="confirm-delete" href="#">
+                Delete
+            </a>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+const modal = document.getElementById("delete-modal");
+const deleteName = document.getElementById("delete-name");
+const confirmDelete = document.getElementById("confirm-delete");
+const cancelDelete = document.getElementById("cancel-delete");
+
+document.querySelectorAll(".delete-link").forEach(link => {
+
+    link.addEventListener("click", function(event) {
+
+        event.preventDefault();
+
+        deleteName.textContent = this.dataset.name;
+        confirmDelete.href = this.dataset.url;
+
+        modal.style.display = "flex";
+    });
+
+});
+
+cancelDelete.addEventListener("click", function() {
+    modal.style.display = "none";
+});
 </script>
