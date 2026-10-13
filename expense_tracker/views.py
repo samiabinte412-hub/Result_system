@@ -1,4 +1,5 @@
 from calendar import month
+from unicodedata import name
 from urllib import request
 import requests
 from django.shortcuts import render, redirect, get_object_or_404
@@ -9,6 +10,9 @@ from datetime import datetime
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from collections import defaultdict
+from decimal import Decimal
+from itertools import groupby
 
 def login_view(request):
     if request.method == "POST":
@@ -73,11 +77,15 @@ def signup(request):
 def add_expense(request):
     name = request.POST['name']
     amount = request.POST['amount']
+    category = request.POST.get('category', '').strip()
+    subcategory = request.POST.get('subcategory', '').strip()
 
     Expense.objects.create(
         user=request.user,
         name=name,
-        amount=amount
+        amount=amount,
+        category=category,
+        subcategory=subcategory,
     )
 
 
@@ -239,6 +247,62 @@ def home(request):
             else:
                 product_message = f"⚠️ API returned {response.status_code}"
 
+    # Put this after your POST-handling block and before return render(...)
+
+    # Build date -> category -> subcategory groups for the template
+    daily_groups = []
+
+    # Make sure expenses are ordered by date for groupby().
+    expenses_for_grouping = expenses.order_by('-created_at')
+
+    for expense_date, day_expenses in groupby(
+        expenses_for_grouping,
+        key=lambda expense: expense.created_at.date()
+    ):
+        categories = {}
+        uncategorized = []
+
+        for expense in day_expenses:
+            category = (expense.category or '').strip()
+
+            # Keep each uncategorized expense as its own row.
+            if not category:
+                uncategorized.append(expense)
+                continue
+
+            if category not in categories:
+                categories[category] = {
+                    'total': Decimal('0'),
+                    'subcategory_groups': defaultdict(lambda: {
+                        'total': Decimal('0'),
+                        'expenses': [],
+                    }),
+                }
+
+            subcategory = (expense.subcategory or '').strip() or 'Other'
+            category_data = categories[category]
+            subcategory_data = category_data['subcategory_groups'][subcategory]
+
+            category_data['total'] += expense.amount
+            subcategory_data['total'] += expense.amount
+            subcategory_data['expenses'].append(expense)
+
+        # Convert the subcategory dictionaries into lists for the template.
+        for category_data in categories.values():
+            category_data['subcategory_groups'] = [
+                {
+                    'name': name,
+                    'total': data['total'],
+                    'expenses': data['expenses'],
+                }
+                for name, data in category_data['subcategory_groups'].items()
+            ]
+
+        daily_groups.append({
+            'date': expense_date,
+            'categories': categories,
+            'uncategorized': uncategorized,
+        })
     return render(request, 'expense_tracker/home.html', {
         'expenses': expenses,
         'monthly_total': get_monthly_total(request),
@@ -249,7 +313,8 @@ def home(request):
         'success': success,
         'product': product,
         'prefill_name': prefill_name,
-        'product_message': product_message
+        'product_message': product_message,
+        'daily_groups': daily_groups,
     })
 
 
