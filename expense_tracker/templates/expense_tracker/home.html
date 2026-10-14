@@ -387,6 +387,7 @@
     {% for expense in group.list %}
     <ul>
         <li>
+            {{ expense.name }}
             {{ expense.category }}
             -{{ expense.subcategory }}
             - {{ expense.amount }}

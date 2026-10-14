@@ -253,9 +253,14 @@ def home(request):
     # Put this after your POST-handling block and before return render(...)
 
     # Build date -> category -> subcategory groups for the template
-    daily_groups = []
+    if action == 'add':
+        expenses = Expense.objects.filter(
+            user=request.user
+        ).order_by('-created_at')
+        total = sum(e.amount for e in expenses)
 
-    # Make sure expenses are ordered by date for groupby().
+    # Build groups on every request, including GET.
+    daily_groups = []
     expenses_for_grouping = expenses.order_by('-created_at')
 
     for expense_date, day_expenses in groupby(
@@ -268,7 +273,6 @@ def home(request):
         for expense in day_expenses:
             category = (expense.category or '').strip()
 
-            # Keep each uncategorized expense as its own row.
             if not category:
                 uncategorized.append(expense)
                 continue
@@ -290,15 +294,15 @@ def home(request):
             subcategory_data['total'] += expense.amount
             subcategory_data['expenses'].append(expense)
 
-        # Convert the subcategory dictionaries into lists for the template.
         for category_data in categories.values():
             category_data['subcategory_groups'] = [
                 {
-                    'name': name,
-                    'total': data['total'],
-                    'expenses': data['expenses'],
+                    'name': subcategory_name,
+                    'total': subcategory_data['total'],
+                    'expenses': subcategory_data['expenses'],
                 }
-                for name, data in category_data['subcategory_groups'].items()
+                for subcategory_name, subcategory_data
+                in category_data['subcategory_groups'].items()
             ]
 
         daily_groups.append({
