@@ -76,6 +76,9 @@ def signup(request):
 @login_required
 def add_expense(request):
     name = request.POST['name']
+    if not name:
+    # Handle the missing name instead of crashing.
+       return
     amount = request.POST['amount']
     category = request.POST.get('category', '').strip()
     subcategory = request.POST.get('subcategory', '').strip()
