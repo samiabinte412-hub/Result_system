@@ -1,8 +1,16 @@
+import csv
+from decimal import Decimal, InvalidOperation
+from django.contrib import messages
+from django.views.decorators.http import require_POST
+from django.db import transaction
+from io import StringIO
+
 from calendar import month
 from unicodedata import name
 from urllib import request
 import requests
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse
 from .models import Expense
 from django.utils import timezone
 from django.db.models import Sum
@@ -72,6 +80,92 @@ def signup(request):
 
     return render(request,"expense_tracker/signup.html")
 
+
+@login_required
+def export_expenses_csv(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="expenses.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Name', 'Amount', 'Category', 'Subcategory', 'Date/Time'])
+
+    expenses = Expense.objects.filter(user=request.user).order_by('created_at')
+    for expense in expenses:
+        writer.writerow([
+            expense.name,
+            expense.amount,
+            expense.category,
+            expense.subcategory,
+            expense.created_at,
+        ])
+
+    return response
+
+@login_required
+@require_POST
+def import_expenses_csv(request):
+    uploaded_file = request.FILES.get('csv_file')
+    if not uploaded_file:
+        messages.error(request, 'Choose a CSV file to import.')
+        return redirect('expense_home')
+
+    try:
+        text = uploaded_file.read().decode('utf-8-sig')
+        reader = csv.DictReader(StringIO(text))
+
+        required_columns = {
+            'Name', 'Amount', 'Category', 'Subcategory', 'Date/Time'
+        }
+        if not reader.fieldnames or not required_columns.issubset(reader.fieldnames):
+            messages.error(request, 'CSV is missing one or more required columns.')
+            return redirect('expense_home')
+
+        expenses_to_create = []
+
+        for line_number, row in enumerate(reader, start=2):
+            name = (row.get('Name') or '').strip()
+            if not name:
+                continue
+
+            try:
+                amount = Decimal((row.get('Amount') or '').strip())
+                date_text = (row.get('Date/Time') or '').strip()
+
+                # Accept the ISO format produced by the export, plus date-only values.
+                created_at = datetime.fromisoformat(date_text)
+            except (InvalidOperation, ValueError):
+                messages.error(
+                    request,
+                    f'Invalid amount or Date/Time on CSV row {line_number}. '
+                    'No expenses were replaced.'
+                )
+                return redirect('expense_home')
+
+            if timezone.is_naive(created_at):
+                created_at = timezone.make_aware(
+                    created_at, timezone.get_current_timezone()
+                )
+
+            expenses_to_create.append(Expense(
+                user=request.user,
+                name=name,
+                amount=amount,
+                category=(row.get('Category') or '').strip(),
+                subcategory=(row.get('Subcategory') or '').strip(),
+                created_at=created_at,
+            ))
+
+    except (UnicodeDecodeError, csv.Error):
+        messages.error(request, 'Could not read the CSV. Save it as UTF-8 and try again.')
+        return redirect('expense_home')
+
+    # Replace this user's expenses only after the CSV has been fully parsed.
+    with transaction.atomic():
+        Expense.objects.filter(user=request.user).delete()
+        Expense.objects.bulk_create(expenses_to_create)
+
+    messages.success(request, f'Replaced your expenses with {len(expenses_to_create)} imported rows.')
+    return redirect('expense_home')
 
 @login_required
 def add_expense(request):

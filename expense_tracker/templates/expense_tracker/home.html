@@ -194,9 +194,15 @@
     <h1>Expense Tracker</h1>
 
 
-    <form method="POST" action="{% url 'logout' %}" class="logout-form">
+    <form method="POST" class="logout-form">
         {% csrf_token %}
-        <button type="submit" class="logout">Logout</button>
+        <button type="submit" action="{% url 'logout' %}" class="logout">Logout</button>
+        <button style="color:none"><a href="{% url 'export_expenses_csv' %}">Export CSV</a></button>
+    </form>
+    <form method="post" action="{% url 'import_expenses_csv' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="csv_file" accept=".csv,text/csv" required>
+        <button type="submit">Import CSV</button>
     </form>
 
     <div class="box">
