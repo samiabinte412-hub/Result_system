@@ -1,23 +1,23 @@
 import csv
 from decimal import Decimal, InvalidOperation
-from django.contrib import messages
-from django.views.decorators.http import require_POST
-from django.db import transaction
+from django.contrib import messages# type: ignore
+from django.views.decorators.http import require_POST# type: ignore
+from django.db import transaction# type: ignore
 from io import StringIO
 
 from calendar import month
 from unicodedata import name
 from urllib import request
-import requests
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+import requests# type: ignore
+from django.shortcuts import render, redirect, get_object_or_404 # type: ignore
+from django.http import HttpResponse # type: ignore
 from .models import Expense
-from django.utils import timezone
-from django.db.models import Sum
+from django.utils import timezone # type: ignore
+from django.db.models import Sum # type: ignore
 from datetime import datetime
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required # type: ignore
+from django.contrib.auth import authenticate, login, logout # type: ignore
+from django.contrib.auth.models import User # type: ignore
 from collections import defaultdict
 from decimal import Decimal
 from itertools import groupby
