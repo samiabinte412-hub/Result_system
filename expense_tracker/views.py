@@ -167,12 +167,10 @@ def import_expenses_csv(request):
     messages.success(request, f'Replaced your expenses with {len(expenses_to_create)} imported rows.')
     return redirect('expense_home')
 
+
 @login_required
 def add_expense(request):
-    name = request.POST['name']
-    if not name:
-    # Handle the missing name instead of crashing.
-       return
+    name = request.POST.get('name', '').strip()
     amount = request.POST['amount']
     category = request.POST.get('category', '').strip()
     subcategory = request.POST.get('subcategory', '').strip()
@@ -184,6 +182,7 @@ def add_expense(request):
         category=category,
         subcategory=subcategory,
     )
+
 
 
 @login_required

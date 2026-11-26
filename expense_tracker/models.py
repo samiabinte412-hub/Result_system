@@ -8,7 +8,7 @@ class Expense(models.Model):
     password = models.CharField(max_length=100)
     created_at = models.DateTimeField(default=timezone.now)
 
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100,blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
      
     category = models.CharField(max_length=100, blank=True, default='')
