@@ -1,89 +1,96 @@
 <style>
-    div{
-    width: 70%;
-    margin: 0 auto;
-    padding: 5px 15px;
-    background-color:#f0ffc9;
-}
-    h2{
+    div {
+        width: 70%;
+        margin: 0 auto;
+        padding: 5px 15px;
+        background-color: #f0ffc9;
+    }
+
+    h2 {
         margin-top: 0;
     }
+
     a {
         text-decoration: none;
-        color:rgb(241, 110, 110);
+        color: rgb(241, 110, 110);
     }
-    .delete{
-        background-color: rgb(255, 0, 0); 
+
+    .delete {
+        background-color: rgb(255, 0, 0);
         color: white;
-        border-color:rgb(255, 0, 0);
+        border-color: rgb(255, 0, 0);
     }
-    .edit{
-        background-color: rgb(146, 32, 252); 
+
+    .edit {
+        background-color: rgb(146, 32, 252);
         color: white;
-        border-color:rgb(146, 32, 252);
+        border-color: rgb(146, 32, 252);
     }
-    table{
-    width: 50%;
-    background-color: rgb(229, 247, 255);
+
+    table {
+        width: 50%;
+        background-color: rgb(229, 247, 255);
     }
 </style>
 <div>
-<h2><center>Student Dashboard (Private)</center></h2>
+    <h2>
+        <center>Student Dashboard (Private)</center>
+    </h2>
 
-<form method="get" class="get">
+    <form method="get" class="get">
 
-    <input type="text" name="search" placeholder="Search...">
-    <button type="submit">Search</button><br><br>
-</form>
+        <input type="text" name="search" placeholder="Search...">
+        <button type="submit">Search</button><br><br>
+    </form>
 
-<form method="POST">
-    {% csrf_token %}
-    <button name="action" value="delete" class="delete">Delete</button>
-    <button name="action" value="edit" class="edit">Edit</button>
-</form>
+    <form method="POST">
+        {% csrf_token %}
+        <button name="action" value="delete" class="delete">Delete</button>
+        <button name="action" value="edit" class="edit">Edit</button>
+    </form>
 
-{% if action == "delete" %}
-    {% regroup students by name as grouped_students %}
+    {% if action == "delete" %}
+    {% regroup students by roll as grouped_students %}
     {% for group in grouped_students %}
 
-        <h2>{{ group.grouper}}, Roll: {{ group.list.0.roll }}</h2>
+    <h2>{{ group.grouper}}, Roll: {{ group.list.0.roll }}</h2>
 
-        {% for student in group.list %}
+    {% for student in group.list %}
 
-            <p>{{ student.subject }}- {{ student.marks }} 
-                <a href="{% url 'delete_student' student.id %}">Delete</a>
-            </p>
+    <p>{{ student.subject }}- {{ student.marks }}
+        <a href="{% url 'delete_student' student.id %}">Delete</a>
+    </p>
 
-        {% endfor %}
+    {% endfor %}
     {% endfor %}
 
 
-{% elif action == "edit" %}
-    {% regroup students by name as grouped_students %}
+    {% elif action == "edit" %}
+    {% regroup students by roll as grouped_students %}
     {% for group in grouped_students %}
 
-        <h2>{{ group.grouper }}, Roll: {{ group.list.0.roll }}</h2>
+    <h2>{{ group.grouper }}, Roll: {{ group.list.0.roll }}</h2>
 
-        {% for student in group.list %}
+    {% for student in group.list %}
 
-            <p>{{ student.subject }}- {{ student.marks }} 
-                <a href="{% url 'edit_student' student.id %}">Edit</a>
-            </p>
+    <p>{{ student.subject }}- {{ student.marks }}
+        <a href="{% url 'edit_student' student.id %}">Edit</a>
+    </p>
 
-        {% endfor %}
+    {% endfor %}
     {% endfor %}
 
 
-{% else %}
-{% regroup students by name as grouped_students %}
-{% for group in grouped_students %}
-        
-        <table border="1" cellspacing="0" cellpadding="10" >
-        <tr>  
-            <td colspan="4" text-align="left"><b>Name: {{ group.grouper}}<br>
-             Roll: {{ group.list.0.roll }}</b></td>
+    {% else %}
+    {% regroup students by roll as grouped_students %}
+    {% for group in grouped_students %}
+
+    <table border="1" cellspacing="0" cellpadding="10">
+        <tr>
+            <td colspan="4" text-align="left"><b>Name: {{ group.list.0.name }}<br>
+                    Roll: {{ group.grouper }}</b></td>
         </tr>
-        <tr>  
+        <tr>
             <th>Subject</th>
             <th>Marks</th>
             <th>Grade</th>
@@ -101,11 +108,21 @@
             {% endif %}
         </tr>
         {% endfor %}
-        </table>
-        <hr>
+    </table>
+    <hr>
 
-{% empty %}
+    {% empty %}
     <p>No students yet</p>
-{% endfor %}
-{% endif %}
+    {% endfor %}
+    {% endif %}
+
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&search={{ search|urlencode }}">Previous</a>
+    {% endif %}
+
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&search={{ search|urlencode }}">Next</a>
+    {% endif %}
 </div>

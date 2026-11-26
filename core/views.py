@@ -21,24 +21,32 @@ def home(request):
 
 
 #@login_required
+
 def dashboard(request):
+    students = Student.objects.all().order_by("id")
 
-    students = Student.objects.all()
-    search = request.GET.get('search')
-
+    search = request.GET.get("search", "")
     if search:
         students = students.filter(name__icontains=search)
-    
 
-    action = None
+    # Get unique student roll numbers
+    student_rolls = students.values_list(
+        "roll", flat=True
+    ).distinct().order_by("roll")
 
-    if request.method == "POST":
+    # Paginate students, not subject records
+    paginator = Paginator(student_rolls, 1)
+    page_obj = paginator.get_page(request.GET.get("page"))
 
-        action = request.POST.get("action")
+    # Get ALL subject records for students on this page
+    page_students = Student.objects.filter(
+        roll__in=page_obj.object_list
+    ).order_by("id")
 
-    return render(request, 'core/dashboard.html', {
-        'students': students,
-        'action': action
+    return render(request, "core/dashboard.html", {
+        "students": page_students,
+        "page_obj": page_obj,
+        "search": search,
     })
     
 
